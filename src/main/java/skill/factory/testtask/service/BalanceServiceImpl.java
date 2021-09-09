@@ -7,6 +7,7 @@ import skill.factory.testtask.domain.UserException;
 import skill.factory.testtask.entity.UserEntity;
 import skill.factory.testtask.exceptions.NegateUserBalanceException;
 import skill.factory.testtask.exceptions.UserNotFoundException;
+import skill.factory.testtask.mapper.UserMapper;
 import skill.factory.testtask.repo.UserRepository;
 
 import java.math.BigDecimal;
@@ -16,6 +17,7 @@ import java.util.Optional;
 @Service
 public class BalanceServiceImpl implements BalanceService {
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     @Override
     public BigDecimal getBalance(int id) {
@@ -26,28 +28,31 @@ public class BalanceServiceImpl implements BalanceService {
 
     @Override
     public Optional<User> takeMoney(User user) {
-        Optional<UserEntity> userOptionalFromDbById = userRepository.findById(user.getId());
-        User userFromDb = userOptionalFromDbById
-                .map(userEntity -> new User(userEntity.getId(), userEntity.getBalance()))
-                .orElseThrow(() -> new UserNotFoundException(user.getId()));
-        if (userFromDb.getBalance().compareTo(user.getBalance()) < 0) {
-            throw new NegateUserBalanceException(new UserException(userFromDb.getId(), userFromDb.getBalance(), user.getBalance()));
+        User userFromDb = getUserFromDb(user.getId());
+        if (userFromDb.getBalance().compareTo(user.getBalance()) >= 0) {
+            BigDecimal resultBalance = userFromDb.getBalance().add(user.getBalance());
+            return getUserAfterUpdate(new User(userFromDb.getId(), resultBalance));
         } else {
-            BigDecimal resultBalance = userFromDb.getBalance().subtract(user.getBalance());
-            return userRepository.updateBalance(new UserEntity(userFromDb.getId(), resultBalance))
-                    .map(userEntity -> new User(userEntity.getId(), userEntity.getBalance()));
+            throw new NegateUserBalanceException(new UserException(userFromDb.getId(), userFromDb.getBalance(), user.getBalance()));
         }
     }
 
 
     @Override
     public Optional<User> putMoney(User user) {
-        Optional<UserEntity> userOptionalFromDbById = userRepository.findById(user.getId());
-        User userFromDb = userOptionalFromDbById
-                .map(userEntity -> new User(userEntity.getId(), userEntity.getBalance()))
-                .orElseThrow(() -> new UserNotFoundException(user.getId()));
+        User userFromDb = getUserFromDb(user.getId());
         BigDecimal resultBalance = userFromDb.getBalance().add(user.getBalance());
-        return userRepository.updateBalance(new UserEntity(userFromDb.getId(), resultBalance))
-                .map(userEntity -> new User(userEntity.getId(), userEntity.getBalance()));
+        return getUserAfterUpdate(new User(userFromDb.getId(), resultBalance));
+    }
+
+    private User getUserFromDb(int id) {
+        return userRepository.findById(id)
+                .map(userMapper::toUser)
+                .orElseThrow(() -> new UserNotFoundException(id));
+    }
+
+    private Optional<User> getUserAfterUpdate(User user) {
+        return userRepository.updateBalance(userMapper.toUserEntity(user))
+                .map(userMapper::toUser);
     }
 }
