@@ -8,7 +8,7 @@
             <column autoIncrement="true" name="id" type="INT">
                 <constraints primaryKey="true"/>
             </column>
-            <column name="balance" type="BIGINT" defaultValue="0"/>
+            <column name="balance" type="numeric" defaultValue="0"/>
         </createTable>
         <rollback>
             <dropTable tableName="user"/>
