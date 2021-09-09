@@ -16,22 +16,20 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Service
 public class BalanceServiceImpl implements BalanceService {
-    private final UserRepository userRepository;
-    private final UserMapper userMapper;
+    private final UserService userService;
 
     @Override
     public BigDecimal getBalance(int id) {
-        return userRepository.findById(id)
-                .map(UserEntity::getBalance)
-                .orElseThrow(() -> new UserNotFoundException(id));
+        return userService.getUserById(id)
+                .getBalance();
     }
 
     @Override
-    public Optional<User> takeMoney(User user) {
-        User userFromDb = getUserFromDb(user.getId());
+    public User takeMoney(User user) {
+        User userFromDb = userService.getUserById(user.getId());
         if (userFromDb.getBalance().compareTo(user.getBalance()) >= 0) {
             BigDecimal resultBalance = userFromDb.getBalance().add(user.getBalance());
-            return getUserAfterUpdate(new User(userFromDb.getId(), resultBalance));
+            return userService.updateUser(new User(userFromDb.getId(), resultBalance));
         } else {
             throw new NegateUserBalanceException(new UserException(userFromDb.getId(), userFromDb.getBalance(), user.getBalance()));
         }
@@ -39,20 +37,11 @@ public class BalanceServiceImpl implements BalanceService {
 
 
     @Override
-    public Optional<User> putMoney(User user) {
-        User userFromDb = getUserFromDb(user.getId());
+    public User putMoney(User user) {
+        User userFromDb = userService.getUserById(user.getId());
         BigDecimal resultBalance = userFromDb.getBalance().add(user.getBalance());
-        return getUserAfterUpdate(new User(userFromDb.getId(), resultBalance));
+        return userService.updateUser(new User(userFromDb.getId(), resultBalance));
     }
 
-    private User getUserFromDb(int id) {
-        return userRepository.findById(id)
-                .map(userMapper::toUser)
-                .orElseThrow(() -> new UserNotFoundException(id));
-    }
 
-    private Optional<User> getUserAfterUpdate(User user) {
-        return userRepository.updateBalance(userMapper.toUserEntity(user))
-                .map(userMapper::toUser);
-    }
 }

@@ -31,7 +31,7 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public Optional<UserEntity> updateBalance(UserEntity userEntity) {
+    public Optional<UserEntity> update(UserEntity userEntity) {
         MapSqlParameterSource parameterSource = new MapSqlParameterSource();
         parameterSource.addValue("balance", userEntity.getBalance());
         parameterSource.addValue("id", userEntity.getId());

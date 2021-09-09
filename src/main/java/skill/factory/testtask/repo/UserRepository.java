@@ -8,5 +8,5 @@ import java.util.Optional;
 public interface UserRepository {
     Optional<UserEntity> findById(int id);
 
-    Optional<UserEntity> updateBalance(UserEntity userEntity);
+    Optional<UserEntity> update(UserEntity userEntity);
 }
